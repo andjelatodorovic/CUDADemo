@@ -1,18 +1,14 @@
-CU_APPS=simpleMultiGPUEvents simpleP2P_PingPong simpleP2P_PingPongDefault \
-		simple2DFDModified simpleMultiGPUEvents-initial
-C_APPS=simpleP2P_Pageable simpleP2P-async
+all : square
 
-all: ${C_APPS} ${CU_APPS}
+libsquare.so : square.cu
+	nvcc --ptxas-options=-v --compiler-options '-fPIC' -o libsquare.so --shared square.cu
 
-simpleP2P_Pageable: simpleP2P_Pageable.c
-	gcc -O2 -std=c99 -I${MPI_HOME}/include -I${CUDA_HOME}/include -L${MPI_HOME}/lib -L${CUDA_HOME}/lib64 -lcudart -lmpi -o simpleP2P_Pageable simpleP2P_Pageable.c
+square : libsquare.so main.cc
+	g++ -o square main.cc -L. -lsquare
 
-simpleP2P-async: simpleP2P-async.c
-	gcc -O2 -std=c99 -I${MPI_HOME}/include -I${CUDA_HOME}/include -L${MPI_HOME}/lib -L${CUDA_HOME}/lib64 -lcudart -lmpi -o simpleP2P-async simpleP2P-async.c
+run : square
+	LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./square
 
-%: %.cu
-	nvcc -O2 -arch=sm_20 -o $@ $<
-%: %.c
-	gcc -O2 -std=c99 -lm -o $@ $<
-clean:
-	rm -f ${CU_APPS} ${C_APPS}
+clean :
+	rm *.so square *.o *~
+
